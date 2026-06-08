@@ -54,6 +54,8 @@ export function MapView({ map: initialMap, role, currentUserId, currentUser }: P
 	const [newPinTitle, setNewPinTitle] = useState("");
 	const [newPinDesc, setNewPinDesc] = useState("");
 	const [creating, setCreating] = useState(false);
+	const [newPinDate, setNewPinDate] = useState("");
+	const [newPinParticipants, setNewPinParticipants] = useState("");
 
 	const canEdit = role === "OWNER" || role === "MEMBER";
 
@@ -112,24 +114,27 @@ export function MapView({ map: initialMap, role, currentUserId, currentUser }: P
 			if (markersRef.current[pin.id]) return;
 
 			const outer = document.createElement("div");
-			outer.style.cssText = `width: 28px; height: 28px;`;
+			outer.style.cssText = `
+  width: 28px;
+  height: 28px;
+  cursor: pointer;
+`;
 
-			const inner = document.createElement("div");
-			inner.style.cssText = `
-				width: 28px;
-				height: 28px;
-				border-radius: 50%;
-				background: #22c55e;
-				border: 3px solid #fff;
-				cursor: pointer;
-				box-shadow: 0 2px 8px rgba(0,0,0,.5);
-				transition: transform 0.15s;
-			`;
+			const dot = document.createElement("div");
+			dot.style.cssText = `
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  background: #22c55e;
+  border: 3px solid #fff;
+  box-shadow: 0 2px 8px rgba(0,0,0,.5);
+  transition: transform 0.15s;
+`;
 
-			outer.appendChild(inner);
+			outer.appendChild(dot);
 
-			outer.onmouseenter = () => { inner.style.transform = "scale(1.2)"; };
-			outer.onmouseleave = () => { inner.style.transform = ""; };
+			outer.onmouseenter = () => { dot.style.transform = "scale(1.2)"; };
+			outer.onmouseleave = () => { dot.style.transform = ""; };
 			outer.onclick = (e) => {
 				e.stopPropagation();
 				setPendingCoords(null);
@@ -155,7 +160,15 @@ export function MapView({ map: initialMap, role, currentUserId, currentUser }: P
 		const res = await fetch(`/api/maps/${map.id}/pins`, {
 			method: "POST",
 			headers: { "Content-Type": "application/json" },
-			body: JSON.stringify({ title: newPinTitle, description: newPinDesc, ...pendingCoords }),
+			body: JSON.stringify({
+				title: newPinTitle,
+				description: newPinDesc,
+				tripDate: newPinDate || null,
+				participants: newPinParticipants
+					? newPinParticipants.split(",").map((p) => p.trim()).filter(Boolean)
+					: [],
+				...pendingCoords,
+			}),
 		});
 
 		if (res.ok) {
@@ -164,6 +177,8 @@ export function MapView({ map: initialMap, role, currentUserId, currentUser }: P
 			setPendingCoords(null);
 			setNewPinTitle("");
 			setNewPinDesc("");
+			setNewPinDate("");
+			setNewPinParticipants("");
 			setActivePinId(pin.id);
 		}
 		setCreating(false);
@@ -216,7 +231,7 @@ export function MapView({ map: initialMap, role, currentUserId, currentUser }: P
 
 			{/* Create-pin popover */}
 			{pendingCoords && canEdit && (
-				<div className="absolute z-20 left-1/2 -translate-x-1/2 bottom-8 w-80 glass rounded-2xl p-5 animate-slide-up">
+				<div className="absolute z-20 left-1/2 -translate-x-1/2 bottom-8 w-96 glass rounded-2xl p-5 animate-slide-up">
 					<div className="flex items-center justify-between mb-4">
 						<h3 className="font-semibold text-white text-sm">Drop a pin</h3>
 						<button onClick={() => setPendingCoords(null)} className="text-zinc-500 hover:text-white">✕</button>
@@ -225,7 +240,7 @@ export function MapView({ map: initialMap, role, currentUserId, currentUser }: P
 						<input
 							value={newPinTitle}
 							onChange={(e) => setNewPinTitle(e.target.value)}
-							placeholder="Pin title *"
+							placeholder="Title *"
 							className="w-full bg-surface border border-surface-border rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:border-brand-500"
 						/>
 						<textarea
@@ -234,6 +249,18 @@ export function MapView({ map: initialMap, role, currentUserId, currentUser }: P
 							placeholder="Description (optional)"
 							rows={2}
 							className="w-full bg-surface border border-surface-border rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:border-brand-500 resize-none"
+						/>
+						<input
+							type="date"
+							value={newPinDate}
+							onChange={(e) => setNewPinDate(e.target.value)}
+							className="w-full bg-surface border border-surface-border rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:border-brand-500"
+						/>
+						<input
+							value={newPinParticipants}
+							onChange={(e) => setNewPinParticipants(e.target.value)}
+							placeholder="People (comma separated: Jan, Kasia, Piotr)"
+							className="w-full bg-surface border border-surface-border rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:border-brand-500"
 						/>
 						<p className="text-xs text-zinc-500">
 							{pendingCoords.lat.toFixed(4)}, {pendingCoords.lng.toFixed(4)}
