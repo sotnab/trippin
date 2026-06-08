@@ -65,8 +65,8 @@ export function MapView({ map: initialMap, role, currentUserId, currentUser }: P
 		const mb = new mapboxgl.Map({
 			container: mapContainer.current,
 			style: "mapbox://styles/sotnab/cmq5s5db6001301s7dobfdmv5",
-			center: [19.9449799, 50.0646501],
-			zoom: 7,
+			center: [20, 49.65],
+			zoom: 8,
 		});
 
 		mb.on("error", (e) => {

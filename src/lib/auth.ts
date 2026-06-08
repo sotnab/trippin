@@ -13,36 +13,25 @@ export const authOptions: NextAuthOptions = {
     GoogleProvider({
       clientId:     process.env.GOOGLE_CLIENT_ID!,
       clientSecret: process.env.GOOGLE_CLIENT_SECRET!,
+      allowDangerousEmailAccountLinking: true,
     }),
     GitHubProvider({
       clientId:     process.env.GITHUB_CLIENT_ID!,
       clientSecret: process.env.GITHUB_CLIENT_SECRET!,
+      allowDangerousEmailAccountLinking: true,
     }),
   ],
 
-  session: { strategy: "jwt" },
+  session: { strategy: "database" },
 
   pages: {
     signIn: "/login",
   },
 
   callbacks: {
-    async jwt({ token, user }) {
-      if (user) {
-        // user object is only present on first sign-in
-        // at this point the adapter has already created the DB record
-        const dbUser = await prisma.user.findUnique({
-          where:  { email: user.email! },
-          select: { id: true },
-        });
-        if (dbUser) token.id = dbUser.id;
-      }
-      return token;
-    },
-
-    async session({ session, token }) {
-      if (session.user && token.id) {
-        session.user.id = token.id as string;
+    async session({ session, user }) {
+      if (session.user) {
+        session.user.id = user.id;
       }
       return session;
     },
