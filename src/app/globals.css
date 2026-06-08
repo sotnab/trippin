@@ -1,0 +1,41 @@
+/* src/app/globals.css */
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* ── Mapbox base styles ─────────────────────────────────────────────────────── */
+@import "mapbox-gl/dist/mapbox-gl.css";
+
+@layer base {
+  :root {
+    --color-surface:        #0f1117;
+    --color-surface-raised: #1a1d27;
+    --color-surface-border: #2a2d3a;
+    --color-brand:          #22c55e;
+    --color-brand-dim:      #16a34a;
+  }
+
+  * {
+    box-sizing: border-box;
+  }
+
+  html,
+  body {
+    height: 100%;
+  }
+
+  /* Thin scrollbar for dark theme */
+  ::-webkit-scrollbar        { width: 6px; height: 6px; }
+  ::-webkit-scrollbar-track  { background: transparent; }
+  ::-webkit-scrollbar-thumb  { background: var(--color-surface-border); border-radius: 3px; }
+  ::-webkit-scrollbar-thumb:hover { background: #3a3d4a; }
+}
+
+@layer utilities {
+  .glass {
+    background: rgba(26, 29, 39, 0.85);
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+    border: 1px solid var(--color-surface-border);
+  }
+}

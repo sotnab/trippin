@@ -1,0 +1,137 @@
+// prisma/schema.prisma
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// ─── Auth (NextAuth adapter) ──────────────────────────────────────────────────
+
+model Account {
+  id                String  @id @default(cuid())
+  userId            String
+  type              String
+  provider          String
+  providerAccountId String
+  refresh_token     String? @db.Text
+  access_token      String? @db.Text
+  expires_at        Int?
+  token_type        String?
+  scope             String?
+  id_token          String? @db.Text
+  session_state     String?
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([provider, providerAccountId])
+}
+
+model Session {
+  id           String   @id @default(cuid())
+  sessionToken String   @unique
+  userId       String
+  expires      DateTime
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model VerificationToken {
+  identifier String
+  token      String   @unique
+  expires    DateTime
+
+  @@unique([identifier, token])
+}
+
+// ─── Core models ─────────────────────────────────────────────────────────────
+
+model User {
+  id            String    @id @default(cuid())
+  name          String?
+  email         String?   @unique
+  emailVerified DateTime?
+  image         String?
+
+  accounts      Account[]
+  sessions      Session[]
+  ownedMaps     Map[]         @relation("MapOwner")
+  collaborations Collaborator[]
+  createdPins   Pin[]
+}
+
+model Map {
+  id          String   @id @default(cuid())
+  title       String
+  description String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  ownerId     String
+  owner       User     @relation("MapOwner", fields: [ownerId], references: [id], onDelete: Cascade)
+
+  collaborators Collaborator[]
+  pins          Pin[]
+}
+
+enum CollaboratorRole {
+  MEMBER
+  VIEWER
+}
+
+model Collaborator {
+  id     String           @id @default(cuid())
+  mapId  String
+  userId String
+  role   CollaboratorRole
+
+  map  Map  @relation(fields: [mapId], references: [id], onDelete: Cascade)
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([mapId, userId])
+}
+
+model Pin {
+  id          String   @id @default(cuid())
+  mapId       String
+  title       String
+  description String?
+  lat         Float
+  lng         Float
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  createdById String
+  createdBy   User   @relation(fields: [createdById], references: [id])
+
+  map     Map        @relation(fields: [mapId], references: [id], onDelete: Cascade)
+  entries PinEntry[]
+  media   Media[]
+}
+
+model PinEntry {
+  id        String   @id @default(cuid())
+  pinId     String
+  content   String   @db.Text
+  createdAt DateTime @default(now())
+
+  pin Pin @relation(fields: [pinId], references: [id], onDelete: Cascade)
+}
+
+enum MediaType {
+  IMAGE
+  VIDEO
+}
+
+model Media {
+  id        String    @id @default(cuid())
+  pinId     String
+  fileUrl   String
+  fileType  MediaType
+  createdAt DateTime  @default(now())
+
+  pin Pin @relation(fields: [pinId], references: [id], onDelete: Cascade)
+}
