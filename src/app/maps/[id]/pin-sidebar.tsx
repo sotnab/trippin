@@ -2,20 +2,9 @@
 "use client";
 
 import { useEffect, useState, useRef } from "react";
-import Image from "next/image";
+import { PinEntry, Media, PinFull } from '@/types/map'
+import { usePinModal } from "@/hooks/usePinModal";
 import type { MapRole } from "@/lib/permissions";
-
-interface PinEntry { id: string; content: string; }
-interface Media { id: string; fileUrl: string; fileType: "IMAGE" | "VIDEO"; }
-interface PinFull {
-	id: string; title: string; description: string | null;
-	lat: number; lng: number; createdAt: string;
-	tripDate: string | null;
-	participants: string[];
-	createdBy: { id: string; name: string | null; image: string | null };
-	entries: PinEntry[];
-	media: Media[];
-}
 
 interface Props {
 	pinId: string;
@@ -26,22 +15,16 @@ interface Props {
 }
 
 export function PinSidebar({ pinId, mapRole, currentUserId, onClose, onDeleted }: Props) {
-	const [pin, setPin] = useState<PinFull | null>(null);
-	const [loading, setLoading] = useState(true);
 	const [lightbox, setLightbox] = useState<number | null>(null);
-	const [entryText, setEntryText] = useState("");
-	const [posting, setPosting] = useState(false);
-	const [uploading, setUploading] = useState(false);
-	const fileInputRef = useRef<HTMLInputElement>(null);
+	const {
+		pin, loading, uploading,
+		posting, entryText,
+		setEntryText, fileInputRef,
+		addEntry, uploadMedia,
+		deleteMedia, deletePin,
+	} = usePinModal(pinId);
 
 	const canEdit = mapRole === "OWNER" || mapRole === "MEMBER";
-
-	useEffect(() => {
-		setLoading(true);
-		fetch(`/api/pins/${pinId}`)
-			.then((r) => r.json())
-			.then(({ pin }) => { setPin(pin); setLoading(false); });
-	}, [pinId]);
 
 	// Close on Escape
 	useEffect(() => {
@@ -55,49 +38,9 @@ export function PinSidebar({ pinId, mapRole, currentUserId, onClose, onDeleted }
 		return () => window.removeEventListener("keydown", handler);
 	}, [lightbox, onClose]);
 
-	async function handleAddEntry(e: React.FormEvent) {
-		e.preventDefault();
-		if (!entryText.trim()) return;
-		setPosting(true);
-		const res = await fetch(`/api/pins/${pinId}/entries`, {
-			method: "POST",
-			headers: { "Content-Type": "application/json" },
-			body: JSON.stringify({ content: entryText }),
-		});
-		if (res.ok) {
-			const entry = await res.json();
-			setPin((p) => p ? { ...p, entries: [...p.entries, entry] } : p);
-			setEntryText("");
-		}
-		setPosting(false);
-	}
-
-	async function handleFileUpload(e: React.ChangeEvent<HTMLInputElement>) {
-		const files = e.target.files;
-		if (!files?.length) return;
-		setUploading(true);
-		const form = new FormData();
-		Array.from(files).forEach((f) => form.append("files", f));
-		const res = await fetch(`/api/pins/${pinId}/media`, { method: "POST", body: form });
-		if (res.ok) {
-			const newMedia: Media[] = await res.json();
-			setPin((p) => p ? { ...p, media: [...p.media, ...newMedia] } : p);
-		}
-		setUploading(false);
-		if (fileInputRef.current) fileInputRef.current.value = "";
-	}
-
-	async function handleDelete() {
-		if (!confirm("Delete this pin and all its content?")) return;
-		const res = await fetch(`/api/pins/${pinId}`, { method: "DELETE" });
-		if (res.ok) onDeleted();
-	}
-
-	async function handleDeleteMedia(mediaId: string) {
-		const res = await fetch(`/api/media/delete/${mediaId}`, { method: "DELETE" });
-		if (res.ok) {
-			setPin((p) => p ? { ...p, media: p.media.filter((m) => m.id !== mediaId) } : p);
-		}
+	async function handleDeletePin() {
+		const res = await deletePin();
+		if (res?.ok) onDeleted();
 	}
 
 	return (
@@ -126,7 +69,7 @@ export function PinSidebar({ pinId, mapRole, currentUserId, onClose, onDeleted }
 							<div className="flex items-center gap-2 shrink-0">
 								{canEdit && pin && (
 									<button
-										onClick={handleDelete}
+										onClick={handleDeletePin}
 										className="text-red-400 hover:text-red-300 hover:bg-red-950/30 px-3 py-1.5 text-xs rounded-lg transition-colors border border-red-500/20"
 									>
 										🗑 Delete
@@ -185,7 +128,7 @@ export function PinSidebar({ pinId, mapRole, currentUserId, onClose, onDeleted }
 												</button>
 												{canEdit && (
 													<button
-														onClick={() => handleDeleteMedia(m.id)}
+														onClick={() => deleteMedia(m.id)}
 														className="absolute top-1.5 right-1.5 bg-black/70 hover:bg-red-500 text-white rounded-full w-6 h-6 flex items-center justify-center text-xs opacity-0 group-hover:opacity-100 transition-opacity"
 													>
 														✕
@@ -197,7 +140,7 @@ export function PinSidebar({ pinId, mapRole, currentUserId, onClose, onDeleted }
 												<video src={m.fileUrl} controls className="w-full h-full object-cover" />
 												{canEdit && (
 													<button
-														onClick={() => handleDeleteMedia(m.id)}
+														onClick={() => deleteMedia(m.id)}
 														className="absolute top-1.5 right-1.5 bg-black/70 hover:bg-red-500 text-white rounded-full w-6 h-6 flex items-center justify-center text-xs opacity-0 group-hover:opacity-100 transition-opacity"
 													>
 														✕
@@ -211,7 +154,7 @@ export function PinSidebar({ pinId, mapRole, currentUserId, onClose, onDeleted }
 									{canEdit && (
 										<>
 											<input ref={fileInputRef} type="file" accept="image/*,video/*" multiple className="hidden"
-												onChange={handleFileUpload} />
+												onChange={uploadMedia} />
 											<button
 												onClick={() => fileInputRef.current?.click()}
 												disabled={uploading}
@@ -230,7 +173,7 @@ export function PinSidebar({ pinId, mapRole, currentUserId, onClose, onDeleted }
 									{canEdit && (
 										<>
 											<input ref={fileInputRef} type="file" accept="image/*,video/*" multiple className="hidden"
-												onChange={handleFileUpload} />
+												onChange={uploadMedia} />
 											<button
 												onClick={() => fileInputRef.current?.click()}
 												disabled={uploading}
@@ -258,7 +201,7 @@ export function PinSidebar({ pinId, mapRole, currentUserId, onClose, onDeleted }
 								))}
 
 								{canEdit && (
-									<form onSubmit={handleAddEntry} className="flex gap-2 pt-1">
+									<form onSubmit={addEntry} className="flex gap-2 pt-1">
 										<input
 											value={entryText}
 											onChange={(e) => setEntryText(e.target.value)}

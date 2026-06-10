@@ -4,15 +4,7 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import Image from "next/image";
-
-interface CollabUser { id: string; name: string | null; email: string | null; image: string | null; }
-interface Collaborator { id: string; role: "MEMBER" | "VIEWER"; user: CollabUser; }
-interface SimpleUser { id: string; name: string | null; image: string | null; }
-interface MapData {
-	id: string; title: string; description: string | null;
-	owner: SimpleUser;
-	collaborators: Collaborator[];
-}
+import { CollabUser, Collaborator, SimpleUser, MapData } from '@/types/map';
 
 interface Props {
 	map: MapData;

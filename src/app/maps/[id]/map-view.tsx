@@ -5,37 +5,25 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import mapboxgl from "mapbox-gl";
 import "mapbox-gl/dist/mapbox-gl.css";
 import Link from "next/link";
-import Image from "next/image";
 import type { MapRole } from "@/lib/permissions";
 import { PinSidebar } from "./pin-sidebar";
 import { MapSettings } from "./map-settings";
 import { UserMenu } from "@/components/user-menu";
+import { MapData, PinStub } from '@/types/map'
 
 mapboxgl.accessToken = process.env.NEXT_PUBLIC_MAPBOX_TOKEN!;
 
 // ─── Types (serialisable subset) ─────────────────────────────────────────────
 
-interface SimpleUser { id: string; name: string | null; image: string | null; }
-interface CollabUser { id: string; name: string | null; email: string | null; image: string | null; }
-interface Collaborator { id: string; role: "MEMBER" | "VIEWER"; user: CollabUser; }
-interface PinStub {
-	id: string; title: string; description: string | null;
-	lat: number; lng: number;
-	createdBy: SimpleUser;
-	_count: { entries: number; media: number };
-}
-interface MapData {
-	id: string; title: string; description: string | null;
-	owner: SimpleUser;
-	collaborators: Collaborator[];
-	pins: PinStub[];
-}
-
 interface Props {
 	map: MapData;
 	role: MapRole;
 	currentUserId: string;
-	currentUser: { name?: string | null; email?: string | null; image?: string | null };
+	currentUser: {
+		name?: string | null;
+		email?: string | null;
+		image?: string | null
+	};
 }
 
 // ─── Component ────────────────────────────────────────────────────────────────
@@ -115,21 +103,21 @@ export function MapView({ map: initialMap, role, currentUserId, currentUser }: P
 
 			const outer = document.createElement("div");
 			outer.style.cssText = `
-  width: 28px;
-  height: 28px;
-  cursor: pointer;
-`;
+				width: 28px;
+				height: 28px;
+				cursor: pointer;
+			`;
 
 			const dot = document.createElement("div");
 			dot.style.cssText = `
-  width: 28px;
-  height: 28px;
-  border-radius: 50%;
-  background: #22c55e;
-  border: 3px solid #fff;
-  box-shadow: 0 2px 8px rgba(0,0,0,.5);
-  transition: transform 0.15s;
-`;
+				width: 28px;
+				height: 28px;
+				border-radius: 50%;
+				background: #22c55e;
+				border: 3px solid #fff;
+				box-shadow: 0 2px 8px rgba(0,0,0,.5);
+				transition: transform 0.15s;
+			`;
 
 			outer.appendChild(dot);
 
