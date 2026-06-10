@@ -27,18 +27,6 @@ export function PinSidebar({ pinId, mapRole, currentUserId, onClose, onDeleted }
 
 	const canEdit = mapRole === "OWNER" || mapRole === "MEMBER";
 
-	// Close on Escape
-	useEffect(() => {
-		const handler = (e: KeyboardEvent) => {
-			if (e.key === "Escape") {
-				if (lightbox !== null) setLightbox(null);
-				else onClose();
-			}
-		};
-		window.addEventListener("keydown", handler);
-		return () => window.removeEventListener("keydown", handler);
-	}, [lightbox, onClose]);
-
 	async function handleDeletePin() {
 		const res = await deletePin();
 		if (res?.ok) onDeleted();
