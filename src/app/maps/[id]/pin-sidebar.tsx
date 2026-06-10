@@ -2,10 +2,10 @@
 "use client";
 
 import { useEffect, useState, useRef } from "react";
-import { PinEntry, Media, PinFull } from '@/types/map'
 import { usePinModal } from "@/hooks/usePinModal";
 import type { MapRole } from "@/lib/permissions";
 import { MediaGallery } from "@/components/media-gallery";
+import { Lightbox } from "@/components/lightbox";
 
 interface Props {
 	pinId: string;
@@ -157,42 +157,13 @@ export function PinSidebar({ pinId, mapRole, currentUserId, onClose, onDeleted }
 			</div>
 
 			{/* Lightbox */}
-			{lightbox !== null && pin && (
-				<div
-					className="fixed inset-0 z-50 bg-black/95 flex items-center justify-center animate-fade-in"
-					onClick={() => setLightbox(null)}
-				>
-					<button
-						className="absolute top-4 right-4 text-white text-2xl hover:text-zinc-400 transition-colors"
-						onClick={() => setLightbox(null)}
-					>✕</button>
-
-					{lightbox > 0 && (
-						<button
-							className="absolute left-4 text-white text-3xl hover:text-zinc-400 transition-colors px-4 py-8"
-							onClick={(e) => { e.stopPropagation(); setLightbox(lightbox - 1); }}
-						>‹</button>
-					)}
-
-					{/* eslint-disable-next-line @next/next/no-img-element */}
-					<img
-						src={pin.media[lightbox].fileUrl}
-						alt=""
-						className="max-w-full max-h-full object-contain"
-						onClick={(e) => e.stopPropagation()}
-					/>
-
-					{lightbox < pin.media.length - 1 && (
-						<button
-							className="absolute right-4 text-white text-3xl hover:text-zinc-400 transition-colors px-4 py-8"
-							onClick={(e) => { e.stopPropagation(); setLightbox(lightbox + 1); }}
-						>›</button>
-					)}
-
-					<div className="absolute bottom-4 text-xs text-zinc-500">
-						{lightbox + 1} / {pin.media.length}
-					</div>
-				</div>
+			{pin && lightbox !== null && (
+				<Lightbox
+					media={pin.media}
+					index={lightbox}
+					onClose={() => setLightbox(null)}
+					onChange={setLightbox}
+				/> 
 			)}
 		</>
 	);
