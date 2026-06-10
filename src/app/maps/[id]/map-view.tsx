@@ -11,6 +11,7 @@ import { MapSettings } from "./map-settings";
 import { UserMenu } from "@/components/user-menu";
 import { MapData, PinStub } from '@/types/map'
 import { useMapMarkers } from "@/hooks/useMapMarkers";
+import { CreatePinForm } from "@/components/create-pin-form";
 
 mapboxgl.accessToken = process.env.NEXT_PUBLIC_MAPBOX_TOKEN!;
 
@@ -44,12 +45,6 @@ export function MapView({ map: initialMap, role, currentUserId, currentUser }: P
 
 	// Create-pin form state
 	const [pendingCoords, setPendingCoords] = useState<{ lng: number; lat: number } | null>(null);
-	const [newPinTitle, setNewPinTitle] = useState("");
-	const [newPinDesc, setNewPinDesc] = useState("");
-	const [creating, setCreating] = useState(false);
-	const [newPinDate, setNewPinDate] = useState("");
-	const [newPinParticipants, setNewPinParticipants] = useState("");
-
 	const canEdit = role === "OWNER" || role === "MEMBER";
 
 	// ── Initialise Mapbox ─────────────────────────────────────────────────────
@@ -92,36 +87,21 @@ export function MapView({ map: initialMap, role, currentUserId, currentUser }: P
 
 	// ── Create pin ────────────────────────────────────────────────────────────
 
-	async function handleCreatePin(e: React.FormEvent) {
-		e.preventDefault();
-		if (!pendingCoords || !newPinTitle.trim()) return;
-		setCreating(true);
+	async function handleCreatePin(data: any) {
+		if (!pendingCoords) return;
 
 		const res = await fetch(`/api/maps/${map.id}/pins`, {
 			method: "POST",
 			headers: { "Content-Type": "application/json" },
-			body: JSON.stringify({
-				title: newPinTitle,
-				description: newPinDesc,
-				tripDate: newPinDate || null,
-				participants: newPinParticipants
-					? newPinParticipants.split(",").map((p) => p.trim()).filter(Boolean)
-					: [],
-				...pendingCoords,
-			}),
+			body: JSON.stringify(data),
 		});
 
 		if (res.ok) {
 			const pin: PinStub = await res.json();
 			setMap((m) => ({ ...m, pins: [pin, ...m.pins] }));
 			setPendingCoords(null);
-			setNewPinTitle("");
-			setNewPinDesc("");
-			setNewPinDate("");
-			setNewPinParticipants("");
 			setActivePinId(pin.id);
 		}
-		setCreating(false);
 	}
 
 	function handlePinDeleted(pinId: string) {
@@ -170,52 +150,11 @@ export function MapView({ map: initialMap, role, currentUserId, currentUser }: P
 
 			{/* Create-pin popover */}
 			{pendingCoords && canEdit && (
-				<div className="absolute z-20 left-1/2 -translate-x-1/2 bottom-8 w-96 glass rounded-2xl p-5 animate-slide-up">
-					<div className="flex items-center justify-between mb-4">
-						<h3 className="font-semibold text-white text-sm">Drop a pin</h3>
-						<button onClick={() => setPendingCoords(null)} className="text-zinc-500 hover:text-white">✕</button>
-					</div>
-					<form onSubmit={handleCreatePin} className="space-y-3">
-						<input
-							value={newPinTitle}
-							onChange={(e) => setNewPinTitle(e.target.value)}
-							placeholder="Title *"
-							className="w-full bg-surface border border-surface-border rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:border-brand-500"
-						/>
-						<textarea
-							value={newPinDesc}
-							onChange={(e) => setNewPinDesc(e.target.value)}
-							placeholder="Description (optional)"
-							rows={2}
-							className="w-full bg-surface border border-surface-border rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:border-brand-500 resize-none"
-						/>
-						<input
-							type="date"
-							value={newPinDate}
-							onChange={(e) => setNewPinDate(e.target.value)}
-							className="w-full bg-surface border border-surface-border rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:border-brand-500"
-						/>
-						<input
-							value={newPinParticipants}
-							onChange={(e) => setNewPinParticipants(e.target.value)}
-							placeholder="People (comma separated: Jan, Kasia, Piotr)"
-							className="w-full bg-surface border border-surface-border rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:border-brand-500"
-						/>
-						<p className="text-xs text-zinc-500">
-							{pendingCoords.lat.toFixed(4)}, {pendingCoords.lng.toFixed(4)}
-						</p>
-						<div className="flex gap-2">
-							<button type="button" onClick={() => setPendingCoords(null)}
-								className="flex-1 text-sm bg-zinc-800 hover:bg-zinc-700 text-white py-2 rounded-lg transition-colors">
-								Cancel
-							</button>
-							<button type="submit" disabled={creating || !newPinTitle.trim()}
-								className="flex-1 text-sm bg-brand-500 hover:bg-brand-600 disabled:opacity-50 text-white font-medium py-2 rounded-lg transition-colors">
-								{creating ? "Saving…" : "Create Pin"}
-							</button>
-						</div>
-					</form>
-				</div>
+				<CreatePinForm
+					coords={pendingCoords}
+					onCreate={handleCreatePin}
+					onCancel={() => setPendingCoords(null)}
+				/>
 			)}
 
 			{/* Pin sidebar */}
