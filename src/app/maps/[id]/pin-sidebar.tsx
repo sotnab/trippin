@@ -93,6 +93,13 @@ export function PinSidebar({ pinId, mapRole, currentUserId, onClose, onDeleted }
 		if (res.ok) onDeleted();
 	}
 
+	async function handleDeleteMedia(mediaId: string) {
+		const res = await fetch(`/api/media/delete/${mediaId}`, { method: "DELETE" });
+		if (res.ok) {
+			setPin((p) => p ? { ...p, media: p.media.filter((m) => m.id !== mediaId) } : p);
+		}
+	}
+
 	return (
 		<>
 			{/* Backdrop */}
@@ -165,21 +172,37 @@ export function PinSidebar({ pinId, mapRole, currentUserId, onClose, onDeleted }
 								<div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3">
 									{pin.media.map((m, i) =>
 										m.fileType === "IMAGE" ? (
-											<button
-												key={m.id}
-												onClick={() => setLightbox(i)}
-												className="aspect-square rounded-xl overflow-hidden border border-surface-border hover:border-brand-500/50 transition-colors group"
-											>
-												{/* eslint-disable-next-line @next/next/no-img-element */}
-												<img
-													src={m.fileUrl}
-													alt=""
-													className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
-												/>
-											</button>
+											<div key={m.id} className="relative group aspect-square">
+												<button
+													onClick={() => setLightbox(i)}
+													className="w-full h-full rounded-xl overflow-hidden border border-surface-border hover:border-brand-500/50 transition-colors"
+												>
+													<img
+														src={m.fileUrl}
+														alt=""
+														className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+													/>
+												</button>
+												{canEdit && (
+													<button
+														onClick={() => handleDeleteMedia(m.id)}
+														className="absolute top-1.5 right-1.5 bg-black/70 hover:bg-red-500 text-white rounded-full w-6 h-6 flex items-center justify-center text-xs opacity-0 group-hover:opacity-100 transition-opacity"
+													>
+														✕
+													</button>
+												)}
+											</div>
 										) : (
-											<div key={m.id} className="aspect-square rounded-xl overflow-hidden border border-surface-border">
+											<div key={m.id} className="relative group aspect-square rounded-xl overflow-hidden border border-surface-border">
 												<video src={m.fileUrl} controls className="w-full h-full object-cover" />
+												{canEdit && (
+													<button
+														onClick={() => handleDeleteMedia(m.id)}
+														className="absolute top-1.5 right-1.5 bg-black/70 hover:bg-red-500 text-white rounded-full w-6 h-6 flex items-center justify-center text-xs opacity-0 group-hover:opacity-100 transition-opacity"
+													>
+														✕
+													</button>
+												)}
 											</div>
 										)
 									)}
