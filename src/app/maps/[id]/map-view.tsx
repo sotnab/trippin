@@ -10,6 +10,7 @@ import { PinSidebar } from "./pin-sidebar";
 import { MapSettings } from "./map-settings";
 import { UserMenu } from "@/components/user-menu";
 import { MapData, PinStub } from '@/types/map'
+import { useMapMarkers } from "@/hooks/useMapMarkers";
 
 mapboxgl.accessToken = process.env.NEXT_PUBLIC_MAPBOX_TOKEN!;
 
@@ -31,11 +32,15 @@ interface Props {
 export function MapView({ map: initialMap, role, currentUserId, currentUser }: Props) {
 	const mapContainer = useRef<HTMLDivElement>(null);
 	const mapRef = useRef<mapboxgl.Map | null>(null);
-	const markersRef = useRef<Record<string, mapboxgl.Marker>>({});
 
 	const [map, setMap] = useState(initialMap);
 	const [activePinId, setActivePinId] = useState<string | null>(null);
 	const [showSettings, setShowSettings] = useState(false);
+
+	const { syncMarkers, removeMarker, removeAll } = useMapMarkers((pinId: string) => {
+		setPendingCoords(null);
+		setActivePinId(pinId);
+	});
 
 	// Create-pin form state
 	const [pendingCoords, setPendingCoords] = useState<{ lng: number; lat: number } | null>(null);
@@ -76,67 +81,14 @@ export function MapView({ map: initialMap, role, currentUserId, currentUser }: P
 		mapRef.current = mb;
 		return () => {
 			// Remove all markers first
-			Object.values(markersRef.current).forEach(m => m.remove());
-			markersRef.current = {};
+			removeAll();
 			mb.remove();
 			mapRef.current = null;
 		};
 		// eslint-disable-next-line react-hooks/exhaustive-deps
 	}, []);
 
-	// ── Render markers whenever pins change ───────────────────────────────────
-
-	const syncMarkers = useCallback((pins: PinStub[]) => {
-		const mb = mapRef.current;
-		if (!mb) return;
-
-		const pinIds = new Set(pins.map((p) => p.id));
-
-		// Remove stale markers
-		for (const [id, marker] of Object.entries(markersRef.current)) {
-			if (!pinIds.has(id)) { marker.remove(); delete markersRef.current[id]; }
-		}
-
-		// Add new markers
-		pins.forEach((pin) => {
-			if (markersRef.current[pin.id]) return;
-
-			const outer = document.createElement("div");
-			outer.style.cssText = `
-				width: 28px;
-				height: 28px;
-				cursor: pointer;
-			`;
-
-			const dot = document.createElement("div");
-			dot.style.cssText = `
-				width: 28px;
-				height: 28px;
-				border-radius: 50%;
-				background: #22c55e;
-				border: 3px solid #fff;
-				box-shadow: 0 2px 8px rgba(0,0,0,.5);
-				transition: transform 0.15s;
-			`;
-
-			outer.appendChild(dot);
-
-			outer.onmouseenter = () => { dot.style.transform = "scale(1.2)"; };
-			outer.onmouseleave = () => { dot.style.transform = ""; };
-			outer.onclick = (e) => {
-				e.stopPropagation();
-				setPendingCoords(null);
-				setActivePinId(pin.id);
-			};
-
-			const marker = new mapboxgl.Marker({ element: outer, anchor: "center" })
-				.setLngLat([pin.lng, pin.lat])
-				.addTo(mb);
-			markersRef.current[pin.id] = marker;
-		});
-	}, []);
-
-	useEffect(() => { syncMarkers(map.pins); }, [map.pins, syncMarkers]);
+	useEffect(() => { syncMarkers(map.pins, mapRef.current!); }, [map.pins, syncMarkers]);
 
 	// ── Create pin ────────────────────────────────────────────────────────────
 
@@ -173,8 +125,7 @@ export function MapView({ map: initialMap, role, currentUserId, currentUser }: P
 	}
 
 	function handlePinDeleted(pinId: string) {
-		markersRef.current[pinId]?.remove();
-		delete markersRef.current[pinId];
+		removeMarker(pinId);
 		setMap((m) => ({ ...m, pins: m.pins.filter((p) => p.id !== pinId) }));
 		setActivePinId(null);
 	}
