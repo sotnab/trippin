@@ -99,18 +99,8 @@ export function PinSidebar({ pinId, mapRole, currentUserId, onClose, onDeleted }
 					) : pin ? (
 						<div className="p-6 space-y-8">
 
-							{/* Gallery */}
-
-							<MediaGallery
-								media={pin.media}
-								canEdit={canEdit}
-								uploading={uploading}
-								onLightbox={setLightbox}
-								onUpload={uploadMedia}
-								onDelete={deleteMedia}
-							/>
-
 							{/* Entries */}
+
 							<div className="space-y-3">
 								<h3 className="text-xs font-semibold uppercase tracking-widest text-zinc-500">
 									Notes & Memories
@@ -139,6 +129,17 @@ export function PinSidebar({ pinId, mapRole, currentUserId, onClose, onDeleted }
 									</form>
 								)}
 							</div>
+
+							{/* Gallery */}
+
+							<MediaGallery
+								media={pin.media}
+								canEdit={canEdit}
+								uploading={uploading}
+								onLightbox={setLightbox}
+								onUpload={uploadMedia}
+								onDelete={deleteMedia}
+							/>
 						</div>
 					) : null}
 				</div>
@@ -151,7 +152,7 @@ export function PinSidebar({ pinId, mapRole, currentUserId, onClose, onDeleted }
 					index={lightbox}
 					onClose={() => setLightbox(null)}
 					onChange={setLightbox}
-				/> 
+				/>
 			)}
 		</>
 	);
