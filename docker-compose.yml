@@ -31,10 +31,8 @@ services:
       NEXT_PUBLIC_MAPBOX_TOKEN: ${NEXT_PUBLIC_MAPBOX_TOKEN}
       UPLOAD_DIR: /app/uploads
     volumes:
-      - media_uploads:/app/uploads
     depends_on:
       - db
 
 volumes:
   postgres_data:
-  media_uploads:
