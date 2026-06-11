@@ -49,18 +49,24 @@ model VerificationToken {
 
 // ─── Core models ─────────────────────────────────────────────────────────────
 
+enum UserRole {
+  ADMIN
+  USER
+}
+
 model User {
   id            String    @id @default(cuid())
   name          String?
   email         String?   @unique
   emailVerified DateTime?
   image         String?
+  role          UserRole  @default(USER)  // ← add this line
 
-  accounts      Account[]
-  sessions      Session[]
-  ownedMaps     Map[]         @relation("MapOwner")
+  accounts       Account[]
+  sessions       Session[]
+  ownedMaps      Map[]         @relation("MapOwner")
   collaborations Collaborator[]
-  createdPins   Pin[]
+  createdPins    Pin[]
 }
 
 model Map {
